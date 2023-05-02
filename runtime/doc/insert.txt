@@ -676,7 +676,7 @@ had been typed.
 
 For example, the following will map <Tab> to either actually insert a <Tab> if
 the current line is currently only whitespace, or start/continue a CTRL-N
-completion operation: >
+completion operation: >vim
 
 	function! CleverTab()
 	   if strpart( getline('.'), 0, col('.')-1 ) =~ '^\s*$'
@@ -686,8 +686,17 @@ completion operation: >
 	   endif
 	endfunction
 	inoremap <Tab> <C-R>=CleverTab()<CR>
+<
 
-
+And the same, using Lua:
+>lua
+    function CleverTab()
+        local line = vim.api.nvim_get_current_line()
+        local strpart = line:sub(1, vim.fn.col('.') - 1)
+        return strpart:match('^%s*$') and '<Tab>' or '<C-N>'
+    end
+    vim.keymap.set('i', '<Tab>', function() return CleverTab() end, { expr = true })
+<
 
 Completing whole lines					*compl-whole-line*
 
