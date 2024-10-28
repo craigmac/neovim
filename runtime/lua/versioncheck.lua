@@ -1,81 +1,63 @@
 local M = {}
 
 ---@private
---- Writes runtime/doc/news.txt to stdpath('state')/news.txt
+--- Overwrite cached news file in `stdpath('state')` with `$VIMRUNTIME/doc/news.txt`
 local function _write_news_to_cache()
-  local cached_news = io.open(vim.fn.stdpath('state') .. '/news.txt', 'w+')
-  if cached_news then
-    local news = io.open(vim.fs.normalize('$VIMRUNTIME/doc/news.txt'))
-    if news then
-      local news_content = news:read('*a')
-      cached_news:write(news_content)
-      news:close()
-    end
-    cached_news:close()
-  end
+  local cache_fh, err = io.open(vim.fs.normalize(vim.fn.stdpath('state') .. '/news.txt'), 'w+')
+  if not cache_fh then vim.notify(err) return end
+
+  local news_fh, err = io.open(vim.fs.normalize('$VIMRUNTIME/doc/news.txt'))
+  if not news_fh then vim.notify(err) return end
+
+  local news = news_fh:read('*a')
+  cache_fh:write(news)
+
+  news_fh:close()
+  cache_fh:close()
 end
 
 ---@private
---- Compares size of runtime news.txt file to cached version.
---- Returns true if runtime news.txt is larger, which means there's something
---- that could be diffed.
----@return boolean whether there is something diffable
+--- Returns whether the sha256 hash of the current `$VIMRUNTIME/doc/news.txt`
+--- file is equal to the hash of the cached version.
+---@return boolean Returns `true` if hashes are different
 local function _can_be_diffed()
-  local news_size = vim.fn.getfsize(vim.fs.normalize('$VIMRUNTIME/doc/news.txt'))
-  local cache_news_size = vim.fn.getfsize(vim.fs.normalize(vim.fn.stdpath('state') .. '/news.txt'))
-  return news_size > cache_news_size
+  local current_news_hash = vim.fn.sha256(vim.fs.normalize('$VIMRUNTIME/doc/news.txt'))
+  local cached_news_hash = vim.fn.sha256(vim.fs.normalize(vim.fn.stdpath('state') .. '/news.txt'))
+  return current_news_hash == cached_news_hash
 end
 
 ---@private
---- Asks user if they'd like to see a diff between the cached news.txt file
---- and the current runtime news.txt.
----@return boolean whether user wants to view diff
+--- Asks user if they'd like to see the news
+---@return boolean Returns `true` if user agrees to prompt
 local function _user_wants_diff()
-  local result = vim.fn.confirm('Recent updates detected, view the news?', '&yes\n&no', 1)
+  local result = vim.fn.confirm('VersionCheck: news file changed - view changes?', '&yes\n&no', 1)
   return result == 1
 end
 
 ---@private
---- Asks the user if they'd like to see the news, and if they do, shows them
---- a diff view in a new tabpage.
-local function _maybe_show_diff()
-  if not _user_wants_diff() then
-    return
-  end
-
+local function _show_news_diff()
   vim.cmd.tabedit(vim.fs.normalize('$VIMRUNTIME/doc/news.txt'))
   vim.cmd.diffsplit(vim.fs.normalize(vim.fn.stdpath('state') .. '/news.txt'))
 end
 
+---Entrypoint for module, called by `$VIMRUNTIME/runtime/plugin/versioncheck.lua`
 function M.check_for_news()
+  local current_version = vim.version()
+
+  -- early exit condition - no version cached in `:help shada-file`
   if vim.g.NVIM_VERSION == nil then
-    vim.g.NVIM_VERSION = vim.version()
+    vim.g.NVIM_VERSION = current_version
     _write_news_to_cache()
-  else
-    -- BUG: https://github.com/neovim/neovim/issues/23687
-    -- If we've reached this branch, we can assume `prerelease = true`
-    -- and can workaround by extracting only what we really need to compare
-    -- instead of the entire vim.version() tables
-    local cached_version = {
-      vim.g.NVIM_VERSION.major,
-      vim.g.NVIM_VERSION.minor,
-      vim.g.NVIM_VERSION.patch,
-    }
-    local version = vim.version()
-    local current_version = {
-      version.major,
-      version.minor,
-      version.patch,
-    }
-    -- cached NVIM_VERSION is less than current vim.version()
-    if vim.version.cmp(cached_version, current_version) == -1 then
-      vim.g.NVIM_VERSION = vim.version()
-      _maybe_show_diff()
-    -- cache is equal but maybe the file sizes are not
-    elseif vim.version.cmp(cached_version, current_version) == 0 then
-      if _can_be_diffed() then
-        _maybe_show_diff()
-      end
+    return
+  end
+
+  if vim.version.lt(vim.g.NVIM_VERSION, current_version) then
+    vim.g.NVIM_VERSION = current_version
+    if _user_wants_diff() then _show_news_diff() end
+  elseif vim.version.eq(vim.g.NVIM_VERSION, current_version) then
+    -- equal reported versions, but the contents of news file can still differ
+    if _can_be_diffed() and _user_wants_diff() then
+      _show_news_diff()
     end
   end
 end
