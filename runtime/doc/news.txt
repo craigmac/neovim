@@ -231,7 +231,7 @@ PLUGINS
 
 • EditorConfig
   • spelling_language property is now supported.
-• News
+• VersionCheck
   • A new plugin, only active on pre-release builds, which will offer
     to show any detected changes to the `:help news` file after startup.
 
