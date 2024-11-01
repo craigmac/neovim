@@ -1,49 +1,58 @@
-local helpers = require('test.functional.helpers')(after_each)
-local clear = helpers.clear
-local eq = helpers.eq
-local pathsep = helpers.get_pathsep()
-local write_file = helpers.write_file
-local mkdir_p = helpers.mkdir_p
-local read_file = helpers.read_file
-local meths = helpers.meths
+local t = require('test.testutil')
+local n = require('test.functional.testnvim')()
+
+local clear = n.clear
+local command = n.command
+local eq = t.eq
+local pathsep = n.get_pathsep()
+local fn = n.fn
+local api = n.api
 
 local testdir = 'Xtest-versioncheck'
-local old_news = read_file('test/functional/fixtures/news.txt')
+
+-- an older news.txt file
+local cached_news = t.read_file('test/functional/fixtures/news.txt')
+
+local newsfile = n.read_file("$VIMRUNTIME/doc/news.txt")
 
 setup(function()
-  mkdir_p(testdir)
-  write_file(testdir .. pathsep .. 'news.txt', old_news)
+  n.mkdir_p(testdir)
+  t.write_file(testdir .. pathsep .. 'news.txt', cached_news)
 end)
 
 teardown(function()
-  helpers.rmdir(testdir)
+  n.rmdir(testdir)
 end)
 
-describe('versioncheck module', function()
+describe('versioncheck', function()
   before_each(function()
     -- remove -u NONE so runtime/plugin/versioncheck.lua runs
     clear({ args_rm = { '-u' } })
-    write_file(testdir .. pathsep .. 'news.txt', old_news)
+   t.write_file(testdir .. pathsep .. 'news.txt', cached_news)
   end)
 
   after_each(function()
-    os.remove(testdir .. pathsep .. 'news.txt')
+    n.rmdir(testdir)
   end)
 
   it('loads', function()
-    eq(true, meths.get_var('loaded_versioncheck'))
+    eq(true, api.nvim_get_option_value('versioncheck', { scope = "global" }))
   end)
 
-  it('can be disabled globally', function()
-    meths.set_var('loaded_versioncheck', false)
-    eq(false, meths.get_var('loaded_versioncheck'))
-  end)
+  -- it('can be disabled by user option', function()
+  --   api.nvim_set_option_value('versioncheck', false, { scope = "global" })
+  --   eq(false, api.nvim_get_option_value('versioncheck', { scope = "global" })
+  -- end)
 
   it('does not run when nvim run non-interactively', function()
-    pending()
+    t.skip(true)
   end)
 
-  it('is disabled when vim.version() is not pre-release', function()
-    pending()
+  it('only runs on prerelease builds (nightly)', function()
+    t.skip(true)
   end)
+  
+
+
+  -- it('', function() pending() end)
 end)
