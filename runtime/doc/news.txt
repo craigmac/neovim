@@ -89,6 +89,9 @@ The following new APIs and features were added.
 
 • |vim.iter()| provides a generic iterator interface for tables and Lua
   iterators |for-in|.
+• Added |vim.keycode()| for translating keycodes in a string.
+• Nvim shows news.txt on startup if it is a prerelease that has news since the previous build.
+builds only).
 
 • Added |vim.ringbuf()| to create ring buffers.
 
