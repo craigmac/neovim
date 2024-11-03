@@ -2,57 +2,53 @@ local t = require('test.testutil')
 local n = require('test.functional.testnvim')()
 
 local clear = n.clear
-local command = n.command
 local eq = t.eq
 local pathsep = n.get_pathsep()
-local fn = n.fn
 local api = n.api
-
-local testdir = 'Xtest-versioncheck'
-
--- an older news.txt file
-local cached_news = t.read_file('test/functional/fixtures/news.txt')
-
-local newsfile = n.read_file("$VIMRUNTIME/doc/news.txt")
+local write_file = t.write_file
+local rmdir = n.rmdir
+local mkdir_p = n.mkdir_p
 
 setup(function()
-  n.mkdir_p(testdir)
-  t.write_file(testdir .. pathsep .. 'news.txt', cached_news)
+  local testdir = 'Xtest-versioncheck'
+  local cached_news = t.read_file('test/functional/fixtures/news.txt')
+  print(cached_news)
+
+  mkdir_p(testdir)
+  write_file(testdir .. pathsep .. 'news.txt', cached_news)
+
+  -- TODO: do i need to change the runtimepath value in clear() args like
+  -- done in health_spec?
 end)
 
-teardown(function()
-  n.rmdir(testdir)
-end)
+-- teardown(function()
+--   rmdir(testdir)
+-- end)
 
 describe('versioncheck', function()
   before_each(function()
+    -- TODO: research the clear() args needed to run this plugin
     -- remove -u NONE so runtime/plugin/versioncheck.lua runs
     clear({ args_rm = { '-u' } })
-   t.write_file(testdir .. pathsep .. 'news.txt', cached_news)
   end)
 
-  after_each(function()
-    n.rmdir(testdir)
+  it('does not run when nvim is started as a Lua interpreter', function()
+    clear({ args = { '-l' } })
+    eq(false, api.nvim_get_option_value('versioncheck', { scope = "global" }))
   end)
 
-  it('loads', function()
-    eq(true, api.nvim_get_option_value('versioncheck', { scope = "global" }))
+  it('does not run when nvim is a prerelease build (nightly)', function()
+    pending()
+    -- eq(false, api.nvim_get_option_value('versioncheck', { scope = "global" }))
   end)
 
-  -- it('can be disabled by user option', function()
-  --   api.nvim_set_option_value('versioncheck', false, { scope = "global" })
-  --   eq(false, api.nvim_get_option_value('versioncheck', { scope = "global" })
-  -- end)
-
-  it('does not run when nvim run non-interactively', function()
-    t.skip(true)
+  it('does not run when user opts out', function()
+    api.nvim_set_var('versioncheck', false)
+    eq(false, api.nvim_get_option_value('versioncheck', { scope = "global" }))
   end)
 
-  it('only runs on prerelease builds (nightly)', function()
-    t.skip(true)
+  it('creates a cached news.txt file if it does not exist', function()
+    pending()
   end)
-  
 
-
-  -- it('', function() pending() end)
 end)
