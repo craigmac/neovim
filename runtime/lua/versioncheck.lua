@@ -16,7 +16,7 @@ local M = {}
 
 --- @private
 --- Overwrite any cached news.txt file with current runtime news.txt contents
-local function write_news_to_cache()
+local function _write_news_to_cache()
   local cache_fh, err = io.open(vim.fs.normalize(vim.fn.stdpath('state') .. '/news.txt'), 'w+')
   if err then error(err) end
 
@@ -33,7 +33,7 @@ end
 
 --- @private
 --- @return boolean true if hashes match
-local function hashes_match()
+local function _hashes_match()
   local current_news_hash = vim.fn.sha256(vim.fs.normalize('$VIMRUNTIME/doc/news.txt'))
   local cached_news_hash = vim.fn.sha256(vim.fs.normalize(vim.fn.stdpath('state') .. '/news.txt'))
   return current_news_hash == cached_news_hash
@@ -53,15 +53,24 @@ local function show_news_diff()
   vim.cmd.diffsplit(vim.fs.normalize(vim.fn.stdpath('state') .. '/news.txt'))
 end
 
+---@private
+local function _compare_versions()
+end
+
 function M.check_for_news()
   local current_version = vim.version()
 
-  -- early exit condition - no version cached in `:help shada-file`
-  if vim.g.NVIM_VERSION == nil then
+  if not vim.g.NVIM_VERSION then
     vim.g.NVIM_VERSION = current_version
-    write_news_to_cache()
-    return
   end
+
+  if not _hashes_match() then
+    vim.notify("News file has changed. Use `:News` to view diff")
+  end
+
+  -- TODO: maybe save writing to cache at LeavePre? if we write it
+  -- then we have nothing to diff with!
+  -- _write_news_to_cache()
 
   if vim.version.lt(vim.g.NVIM_VERSION, current_version) then
     vim.g.NVIM_VERSION = current_version
@@ -73,6 +82,7 @@ function M.check_for_news()
       show_news_diff()
     end
   end
+
 end
 
 return M
