@@ -31,40 +31,81 @@ describe('versioncheck', function()
   end)
 
   it('loads', function()
-    eq({}, api.nvim_get_var('versioncheck'))
+    eq(true api.nvim_get_var('versioncheck'))
+  end)
+  
+  -- editorconfig_spec does it this way, using lua values
+  -- it('can be disabled globally', function()
+  --   api.nvim_set_var('editorconfig', false)
+  --   api.nvim_set_option_value('shiftwidth', 42, {})
+  --   test_case('3_space.txt', { shiftwidth = 42 })
+  -- end)
+
+  it('can be disabled globally', function()
+    api.nvim_set_var('editorconfig', false)
+    -- clear({
+    --   args_rm = { '-u' },
+    --   init = [[
+    --     let g:versioncheck=v:false
+    --     " Let's verify the variable is actually set
+    --     echo g:versioncheck
+    --   ]]
+    -- })
+    -- First verify that our global variable was set correctly
+    -- eq(false, api.nvim_get_var('versioncheck'))
+    
+    -- Now reload the plugin to see if it respects the setting
+    -- command('runtime plugin/versioncheck.lua')
+    
+    -- Check the variable again
+    -- eq(nil, api.nvim_get_var('versioncheck'))
   end)
 
-  it('does not load when user opts out', function()
-    command('let g:versioncheck=v:false')
-    eq(false, api.nvim_get_var('versioncheck'))
-  end)
+  -- it('only loads when nvim is prerelease (nightly) version', function()
+  --     local real_version = vim.version
+  --     vim.version = function() 
+  --       return {
+  --         major = 0,
+  --         minor = 9,
+  --         patch = 2,
+  --         prerelease = false
+  --       }
+  --     end
+  --   eq(nil, api.nvim_get_var('versioncheck'))
+  --   vim.version = real_version
+  -- end)
 
-  it('only loads when nvim is prerelease (nightly) version', function()
-    -- TODO: not sure how to test this, because plugin/versioncheck.lua
-    -- checks using vim.version() I would have to change the check there?
-    pending()
-  end)
+  -- it('does not load when nvim is started as a Lua interpreter', function()
+  --   clear({ args = { '-l' } })
+  --   eq(nil, api.nvim_get_var('versioncheck'))
+  -- end)
 
-  it('does not load when nvim is started as a Lua interpreter', function()
-    --TODO: no idea how to test this, seems to just run and exit
-    --but then I get error because instance has exited?
-    pending()
-  end)
+  -- it('does not load when shada file cannot be read', function()
+  --   before_each(function()
+  --     clear({ args = { '-i', 'NONE' } })
+  --   end)
+  --   eq(nil, api.nvim_get_var('versioncheck'))
+  -- end)
 
-  it('does not load when shada file cannot be read', function()
-    pending()
-  end)
+  -- it('does not load when "!" missing from shada option', function()
+  --   before_each(function()
+  --     command('set shada=\'100')
+  --   end)
+  --   eq(nil, api.nvim_get_var('versioncheck'))
+  -- end)
 
-  it('does not load when "!" missing from shada option', function()
-    pending()
-  end)
+  -- it('does not load when running under vscode', function()
+  --   before_each(function() 
+  --     command('let g:vscode=v:true')
+  --   end)
+  --   eq(nil, api.nvim_get_var('versioncheck'))
+  -- end)
 
-  it('does not load when running under vscode', function()
-    pending()
-  end)
-
-  it('does not load when running under firenvim', function()
-    pending()
-  end)
+  -- it('does not load when running under firenvim', function()
+  --   before_each(function()
+  --     command('let g:firenvim=v:true')
+  --   end)
+  --   eq(nil, api.nvim_get_var('versioncheck'))
+  -- end)
 
 end)

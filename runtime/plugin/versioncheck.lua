@@ -1,5 +1,5 @@
--- end if user opted out
-if vim.g.versioncheck == false then
+local enable = vim.F.if_nil(vim.g.versioncheck, vim.g.vscode, vim.g.firenvim, true)
+if not enable then
   return
 end
 
@@ -23,12 +23,7 @@ if not vim.o.shada:match('!') then
   return
 end
 
--- end if we running under vscode or firenvim
-if vim.g.vscode or vim.g.firenvim then
-  return
-end
-
-vim.g.versioncheck = {}
+vim.g.versioncheck = true
 
 local augroup = vim.api.nvim_create_augroup("versioncheck", {})
 
