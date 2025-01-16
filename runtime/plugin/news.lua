@@ -8,8 +8,8 @@ if vim.version().prerelease ~= "dev" then
   return
 end
 
--- skip in embedded situations
-if vim.g.vscode or vim.g.started_by_firenvim then
+-- skip in embedded situations where the UI client is 'firenvim', 'vscode-neovim', etc.
+if vim.api.nvim_get_chan_info(vim.api.nvim_list_uis()[1].chan).client.name ~= 'nvim-tui' then
   return
 end
 
@@ -47,7 +47,6 @@ end, {
 
 local augroup = vim.api.nvim_create_augroup("news", {})
 
--- Q: maybe vim.defer_fn(cb, 4000) instead, so we aren't tied to CursorHold?
 vim.api.nvim_create_autocmd('CursorHold', {
   group = augroup,
   desc = 'Notifies user of changes to the news.txt file.',
